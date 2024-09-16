@@ -1,7 +1,8 @@
 library incremental_dom;
 
-import 'dart:html';
-import 'dart:js';
+import 'dart:js_interop' as js;
+import 'dart:js_interop_unsafe' as u;
+import 'package:web/web.dart' as web;
 
 final JsObject _incDom = context['IncrementalDOM'] as JsObject;
 final JsObject _notifications = _incDom['notifications'] as JsObject;
@@ -91,7 +92,8 @@ void elementOpenStart(
 /// Used with [elementOpenStart] and [elementOpenEnd] to declare an element.
 ///
 /// Sets an attribute with [name] and [value].
-void attr(String name, Object value) => _incDom.callMethod('attr', <Object>[name, value]);
+void attr(String name, Object value) =>
+    _incDom.callMethod('attr', <Object>[name, value]);
 
 /// Used with [elementOpenStart] and [attr] to declare an
 /// element.
@@ -110,7 +112,8 @@ Element elementOpenEnd() => _incDom.callMethod('elementOpenEnd') as Element;
 /// This could also be the tag of a custom element.
 ///
 /// Returns the corresponding DOM Element.
-Element elementClose(String tagname) => _incDom.callMethod('elementClose', <Object>[tagname]) as Element;
+Element elementClose(String tagname) =>
+    _incDom.callMethod('elementClose', <Object>[tagname]) as Element;
 
 /// A combination of [elementOpen], followed by
 /// [elementClose].
@@ -210,18 +213,21 @@ void skipNode() => _incDom.callMethod('skipNode');
 
 /// A function to set a value as a property
 /// or attribute for an element.
-typedef ValueSetter = void Function(Element element, String name, Object? value);
+typedef ValueSetter = void Function(
+    Element element, String name, Object? value);
 
 /// A predefined function, that applies a value as a
 /// property.
 ValueSetter get applyProp {
-  return (Element element, String name, Object? value) => _incDom['applyProp'].apply([element, name, value]);
+  return (Element element, String name, Object? value) =>
+      _incDom['applyProp'].apply([element, name, value]);
 }
 
 /// A predefined function, that applies a value as an
 /// attribute.
 ValueSetter get applyAttr {
-  return (Element element, String name, Object? value) => _incDom['applyAttr'].apply([element, name, value]);
+  return (Element element, String name, Object? value) =>
+      _incDom['applyAttr'].apply([element, name, value]);
 }
 
 /// See [attributes].
@@ -262,12 +268,12 @@ typedef NodeListener = void Function(List<Node> nodes);
 /// See [notifications].
 class Notifications {
   /// Sets the listener for the event of added nodes.
-  set nodesCreaded(NodeListener listener) =>
-      _notifications['nodesCreated'] = (JsArray nodes) => listener(nodes.cast<Node>().toList());
+  set nodesCreaded(NodeListener listener) => _notifications['nodesCreated'] =
+      (JsArray nodes) => listener(nodes.cast<Node>().toList());
 
   /// Sets the listener for the event of deleted nodes.
-  set nodesDeleted(NodeListener listener) =>
-      _notifications['nodesDeleted'] = (JsArray nodes) => listener(nodes.cast<Node>().toList());
+  set nodesDeleted(NodeListener listener) => _notifications['nodesDeleted'] =
+      (JsArray nodes) => listener(nodes.cast<Node>().toList());
 }
 
 /// You can be notified when Nodes are added or removed by
