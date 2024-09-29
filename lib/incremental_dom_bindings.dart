@@ -1,32 +1,41 @@
 library incremental_dom;
 
-import 'dart:js_interop' as js;
-import 'dart:js_interop_unsafe' as u;
-import 'package:web/web.dart' as web;
+import "dart:js_interop" as js;
+import "dart:js_interop_unsafe" as u;
+import "package:web/web.dart" as web;
 
-final JsObject _incDom = context['IncrementalDOM'] as JsObject;
-final JsObject _notifications = _incDom['notifications'] as JsObject;
-final JsObject _attributes = _incDom['attributes'] as JsObject;
+final js.JSObject _incDom = web.window["IncrementalDOM"] as js.JSObject;
+final js.JSObject _notifications = _incDom["notifications"] as js.JSObject;
+final js.JSObject _attributes = _incDom["attributes"] as js.JSObject;
 
-/// Maps a list arguments to be valid for Javascript
+js.JSAny? _toJS(dynamic arg) {
+  if (arg == null) {
+    return null;
+  }
+  if (arg is String || arg is int || arg is double || arg is bool) {
+    return arg.toJS;
+  }
+  if (arg is List || arg is Map) {
+    return arg.jsify()!; // bang because we know it's not null
+  }
+  throw Exception("_toJS() cannot handle $arg");
+}
+
+/// Maps a list of arguments to be valid for Javascript
 /// function call.
-List<Object> _mapArgs(List<Object>? args) {
+List<js.JSAny?> _mapArgs(List<Object>? args) {
+  // TODO Test the library then decide whether to delete this function.
   if (args == null) {
     return [];
   }
-  return args.map((arg) {
-    if (arg is Map) {
-      return JsObject.jsify(arg);
-    }
-    return arg;
-  }).toList();
+  return args.map(_toJS).toList();
 }
 
 /// Declares an Element with zero or more
 /// attributes/properties that should be present at the
 /// current location in the document tree.
 ///
-/// The [tagname] is name of the tag, e.g. 'div' or 'span'.
+/// [tagname] is the name of the element, e.g. "div" or "span".
 /// This could also be the tag of a custom element.
 ///
 /// A [key] identifies Element for reuse. See 'Keys and
@@ -46,24 +55,24 @@ List<Object> _mapArgs(List<Object>? args) {
 /// on the Element.
 ///
 /// Returns the corresponding DOM Element.
-Element elementOpen(
+web.Element elementOpen(
   String tagname, [
   String? key,
   List<Object>? staticPropertyValuePairs,
   List<Object>? propertyValuePairs,
 ]) {
-  return _incDom.callMethod('elementOpen', <Object?>[
-    tagname,
-    key,
-    JsArray.from(_mapArgs(staticPropertyValuePairs)),
+  return _incDom.callMethodVarArgs("elementOpen".toJS, [
+    tagname.toJS,
+    key?.toJS,
+    staticPropertyValuePairs.jsify(),
     ..._mapArgs(propertyValuePairs),
-  ]) as Element;
+  ]) as web.Element;
 }
 
 /// Used with [attr] and [elementOpenEnd] to declare an
 /// element.
 ///
-/// The [tagname] is name of the tag, e.g. 'div' or 'span'.
+/// [tagname] is the name of the element, e.g. "div" or "span".
 /// This could also be the tag of a custom element.
 ///
 /// A [key] identifies Element for reuse. See 'Keys and
@@ -81,25 +90,20 @@ void elementOpenStart(
   String? key,
   List<Object>? staticPropertyValuePairs,
 ]) {
-  final args = [
-    tagname,
-    key,
-    JsArray.from(_mapArgs(staticPropertyValuePairs)),
-  ];
-  _incDom.callMethod('elementOpenStart', args);
+  _incDom.callMethod("elementOpenStart".toJS, tagname.toJS, key?.toJS,
+      staticPropertyValuePairs.jsify());
 }
 
 /// Used with [elementOpenStart] and [elementOpenEnd] to declare an element.
 ///
-/// Sets an attribute with [name] and [value].
+/// Sets a dynamic (I mean, not static) attribute with [name] and [value].
 void attr(String name, Object value) =>
-    _incDom.callMethod('attr', <Object>[name, value]);
+    _incDom.callMethod("attr".toJS, [name, value].jsify());
 
-/// Used with [elementOpenStart] and [attr] to declare an
-/// element.
+/// Used with [elementOpenStart] and [attr] to declare an element.
 ///
 /// Returns the corresponding DOM Element.
-Element elementOpenEnd() => _incDom.callMethod('elementOpenEnd') as Element;
+web.Element elementOpenEnd() => _incDom.callMethod("elementOpenEnd".toJS);
 
 /// Signifies the end of the element opened with
 /// [elementOpen], corresponding to a closing tag (e.g.
@@ -108,20 +112,20 @@ Element elementOpenEnd() => _incDom.callMethod('elementOpenEnd') as Element;
 /// encountered in the current render pass are removed by
 /// the call to [elementClose].
 ///
-/// The [tagname] is name of the tag, e.g. 'div' or 'span'.
+/// [tagname] is the name of the element, e.g. "div" or "span".
 /// This could also be the tag of a custom element.
 ///
 /// Returns the corresponding DOM Element.
-Element elementClose(String tagname) =>
-    _incDom.callMethod('elementClose', <Object>[tagname]) as Element;
+web.Element elementClose(String tagname) =>
+    _incDom.callMethod("elementClose".toJS, tagname.toJS);
 
 /// A combination of [elementOpen], followed by
 /// [elementClose].
 ///
-/// The [tagname] is name of the tag, e.g. 'div' or 'span'.
+/// [tagname] is the name of the element, e.g. "div" or "span".
 /// This could also be the tag of a custom element.
 ///
-/// A [key] identifies Element for reuse. See 'Keys and
+/// A [key] identifies the Element for reuse. See 'Keys and
 /// Arrays' in the IncrementalDOM documentation.
 ///
 /// [staticPropertyValuePairs] is a list of pairs of
@@ -138,38 +142,38 @@ Element elementClose(String tagname) =>
 /// on the Element.
 ///
 /// Returns the corresponding DOM Element.
-Element elementVoid(
+web.Element elementVoid(
   String tagname, [
   String? key,
   List<Object>? staticPropertyValuePairs,
   List<Object>? propertyValuePairs,
 ]) {
-  return _incDom.callMethod('elementVoid', <Object?>[
-    tagname,
-    key,
-    JsArray.from(_mapArgs(staticPropertyValuePairs)),
-    ..._mapArgs(propertyValuePairs),
-  ]) as Element;
+  return _incDom.callMethodVarArgs("elementVoid".toJS, [
+    tagname.toJS,
+    key?.toJS,
+    staticPropertyValuePairs.jsify(),
+    ..._mapArgs(propertyValuePairs)
+  ]);
 }
 
-/// Declares a Text node, with the specified [text], should
+/// Declares a Text node, with the specified [value], which should
 /// appear at the current location in the document tree.
 ///
 /// The [formatters] are optional functions that format the
 /// value when it changes. The formatters are applied in the
-/// order they appear in the lost of formatters. The second
+/// order they appear in the list of formatters. The second
 /// formatter will receive the result of the first formatter
 /// and so on.
 ///
 /// Returns the corresponding DOM Text Node.
-Text text(Object value, {List<String Function(Object)>? formatters}) {
-  return _incDom.callMethod('text', <Object>[
-    value,
-    ...?formatters,
-  ]) as Text;
+web.Text text(Object value, {List<String Function(Object)>? formatters}) {
+  final jsFormatters =
+      formatters == null ? null : [for (final f in formatters) f.toJS];
+  return _incDom
+      .callMethodVarArgs("text".toJS, [_toJS(value)!, ...?jsFormatters]);
 }
 
-/// Updates the provided Node with a function containing
+/// Updates the provided node with a function containing
 /// zero or more calls to [elementOpen], [text] and
 /// [elementClose]. The provided callback function may call
 /// other such functions. The [patch] function may be
@@ -181,14 +185,15 @@ Text text(Object value, {List<String Function(Object)>? formatters}) {
 ///
 /// [description] is the callback to build the DOM tree
 /// underneath [node].
-void patch(Node node, void Function(Object?) description, [Object? data]) {
-  _incDom.callMethod('patch', <Object?>[node, description, data]);
+void patch(web.Element node, void Function(Object?) description,
+    [Object? data]) {
+  _incDom.callMethod("patch".toJS, node, description.jsify(), data.jsify());
 }
 
 /// Provides a way to get the currently open element.
 ///
 /// Returns the currently open element.
-Element currentElement() => _incDom.callMethod('currentElement') as Element;
+web.Element currentElement() => _incDom.callMethod("currentElement".toJS);
 
 /// The current location in the DOM that Incremental DOM is
 /// looking at. This will be the next Node that will be
@@ -196,38 +201,38 @@ Element currentElement() => _incDom.callMethod('currentElement') as Element;
 /// call.
 ///
 /// Returns the next node that will be compared.
-Node currentPointer() => _incDom.callMethod('currentPointer') as Element;
+web.Element currentPointer() => _incDom.callMethod("currentPointer".toJS);
 
 /// Moves the current pointer to the end of the currently
 /// open element. This prevents Incremental DOM from
 /// removing any children of the currently open element.
 /// When calling skip, there should be no calls to
-/// [elementOpen] (or similiar) prior to the [elementClose]
+/// [elementOpen] (or similar) prior to the [elementClose]
 /// call for the currently open element.
-void skip() => _incDom.callMethod('skip');
+void skip() => _incDom.callMethod("skip".toJS);
 
 /// Moves the current patch pointer forward by one node.
 /// This can be used to skip over elements declared outside
 /// of Incremental DOM.
-void skipNode() => _incDom.callMethod('skipNode');
+void skipNode() => _incDom.callMethod("skipNode".toJS);
 
 /// A function to set a value as a property
 /// or attribute for an element.
 typedef ValueSetter = void Function(
-    Element element, String name, Object? value);
+    web.Element element, String name, Object? value);
 
 /// A predefined function, that applies a value as a
 /// property.
 ValueSetter get applyProp {
-  return (Element element, String name, Object? value) =>
-      _incDom['applyProp'].apply([element, name, value]);
+  return (web.Element element, String name, Object? value) =>
+      _incDom["applyProp"].apply([element, name, value]);
 }
 
 /// A predefined function, that applies a value as an
 /// attribute.
 ValueSetter get applyAttr {
-  return (Element element, String name, Object? value) =>
-      _incDom['applyAttr'].apply([element, name, value]);
+  return (web.Element element, String name, Object? value) =>
+      _incDom["applyAttr"].apply([element, name, value]);
 }
 
 /// See [attributes].
@@ -263,17 +268,17 @@ class Attributes {
 final attributes = Attributes._();
 
 /// A listener for node events.
-typedef NodeListener = void Function(List<Node> nodes);
+typedef NodeListener = void Function(List<web.Element> nodes);
 
 /// See [notifications].
 class Notifications {
   /// Sets the listener for the event of added nodes.
-  set nodesCreaded(NodeListener listener) => _notifications['nodesCreated'] =
-      (JsArray nodes) => listener(nodes.cast<Node>().toList());
+  set nodesCreated(NodeListener listener) => _notifications["nodesCreated"] =
+      (js.JSArray nodes) => listener(nodes.cast<web.Element>().toList());
 
   /// Sets the listener for the event of deleted nodes.
-  set nodesDeleted(NodeListener listener) => _notifications['nodesDeleted'] =
-      (JsArray nodes) => listener(nodes.cast<Node>().toList());
+  set nodesDeleted(NodeListener listener) => _notifications["nodesDeleted"] =
+      (js.JSArray nodes) => listener(nodes.cast<web.Element>().toList());
 }
 
 /// You can be notified when Nodes are added or removed by
